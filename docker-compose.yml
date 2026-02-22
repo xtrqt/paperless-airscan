@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  paperless-airscan:
+    build: .
+    image: paperless-airscan:latest
+    container_name: paperless-airscan
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - SCANNER_HOST=${SCANNER_HOST:-}
+      - SCANNER_TIMEOUT=${SCANNER_TIMEOUT:-30s}
+      - SCANNER_DUPLEX=${SCANNER_DUPLEX:-true}
+      - SCANNER_SOURCE=${SCANNER_SOURCE:-adf}
+      - SCANNER_COLOR=${SCANNER_COLOR:-grayscale}
+      - PAPERLESS_URL=${PAPERLESS_URL}
+      - PAPERLESS_TOKEN=${PAPERLESS_TOKEN}
+      - SERVER_ADDR=:8080
+      - TITLE_PAGE_ENABLED=${TITLE_PAGE_ENABLED:-true}
+      - TITLE_PAGE_WEEK_START=${TITLE_PAGE_WEEK_START:-monday}
+      - DATABASE_PATH=/data/paperless-airscan.db
+      - TEMP_DIR=/tmp/paperless-airscan
+    volumes:
+      - paperless-airscan-data:/data
+    networks:
+      - paperless-network
+
+volumes:
+  paperless-airscan-data:
+
+networks:
+  paperless-network:
+    driver: bridge
