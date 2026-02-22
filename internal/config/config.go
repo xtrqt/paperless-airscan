@@ -20,6 +20,7 @@ type ScannerConfig struct {
 	Duplex  bool
 	Source  string
 	Color   string
+	Reorder string
 }
 
 type PaperlessConfig struct {
@@ -49,6 +50,7 @@ func Load() *Config {
 			Duplex:  getBoolEnv("SCANNER_DUPLEX", true),
 			Source:  getEnv("SCANNER_SOURCE", "adf"),
 			Color:   getEnv("SCANNER_COLOR", "grayscale"),
+			Reorder: getEnv("SCANNER_REORDER", ""),
 		},
 		Paperless: PaperlessConfig{
 			URL:   os.Getenv("PAPERLESS_URL"),

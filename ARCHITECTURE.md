@@ -117,6 +117,7 @@ Environment variables:
 | `SCANNER_DUPLEX` | Enable duplex (double-sided) scanning | `true` |
 | `SCANNER_SOURCE` | Source: `adf` or `flatbed` | `adf` |
 | `SCANNER_COLOR` | Color mode: `grayscale` or `rgb24` | `grayscale` |
+| `SCANNER_REORDER` | Page reorder mode: `interleave` for duplex reordering | `""` |
 | `PAPERLESS_URL` | Paperless-ngx base URL | Required |
 | `PAPERLESS_TOKEN` | Paperless-ngx API token | Required |
 | `SERVER_ADDR` | Server listen address | `:8080` |

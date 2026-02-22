@@ -33,6 +33,7 @@ func New(cfg *config.Config, store *store.Store, logger *slog.Logger) *Server {
 		cfg.Scanner.Duplex,
 		scanner.Source(cfg.Scanner.Source),
 		scanner.ColorMode(cfg.Scanner.Color),
+		scanner.ReorderMode(cfg.Scanner.Reorder),
 		logger,
 	)
 
@@ -95,17 +96,14 @@ func (s *Server) processJob(jobID string) {
 		return
 	}
 
-	tempDir, err := os.MkdirTemp(s.cfg.Storage.TempDir, "scan-*")
-	if err != nil {
-		s.failJob(jobID, "failed to create temp directory", err)
-		return
-	}
-	defer os.RemoveAll(tempDir)
-
 	result, err := s.scanner.Scan()
 	if err != nil {
 		s.failJob(jobID, "scan failed", err)
 		return
+	}
+
+	if result.TempDir != "" {
+		defer os.RemoveAll(result.TempDir)
 	}
 
 	logger.Info("scan complete", "pages", result.Count)
@@ -119,27 +117,13 @@ func (s *Server) processJob(jobID string) {
 		return
 	}
 
-	var jpegFiles []string
-	err = filepath.Walk(tempDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && filepath.Ext(path) == ".jpg" {
-			jpegFiles = append(jpegFiles, path)
-		}
-		return nil
-	})
-	if err != nil {
-		s.failJob(jobID, "failed to list scanned files", err)
-		return
-	}
-
+	jpegFiles := result.FilePaths
 	if len(jpegFiles) == 0 {
 		s.failJob(jobID, "no pages scanned", nil)
 		return
 	}
 
-	pdfPath := filepath.Join(tempDir, "document.pdf")
+	pdfPath := filepath.Join(result.TempDir, "document.pdf")
 	if err := pdf.MergeJPEGsToPDF(pdfPath, jpegFiles); err != nil {
 		s.failJob(jobID, "failed to create PDF", err)
 		return
@@ -150,7 +134,7 @@ func (s *Server) processJob(jobID string) {
 		if shouldGenerate, weekKey := s.shouldGenerateTitlePage(); shouldGenerate {
 			logger.Info("generating title page", "week", weekKey)
 
-			titlePagePath := filepath.Join(tempDir, "title.pdf")
+			titlePagePath := filepath.Join(result.TempDir, "title.pdf")
 			titleData, err := s.generateTitlePage()
 			if err != nil {
 				logger.Warn("failed to generate title page, skipping", "error", err)

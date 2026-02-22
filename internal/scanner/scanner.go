@@ -3,8 +3,10 @@ package scanner
 import "io"
 
 type ScanResult struct {
-	Pages []io.Reader
-	Count int
+	Pages     []io.Reader
+	Count     int
+	TempDir   string
+	FilePaths []string
 }
 
 type Scanner interface {
@@ -24,4 +26,11 @@ type Source string
 const (
 	SourceADF     Source = "adf"
 	SourceFlatbed Source = "flatbed"
+)
+
+type ReorderMode string
+
+const (
+	ReorderNone       ReorderMode = ""
+	ReorderInterleave ReorderMode = "interleave"
 )

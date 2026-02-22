@@ -72,12 +72,21 @@ All configuration via environment variables:
 | `SCANNER_DUPLEX` | Enable duplex scanning | `true` |
 | `SCANNER_SOURCE` | `adf` or `flatbed` | `adf` |
 | `SCANNER_COLOR` | `grayscale` or `rgb24` | `grayscale` |
+| `SCANNER_REORDER` | `interleave` to reorder duplex pages (fronts-then-backs → interleaved) | `""` |
 | `PAPERLESS_URL` | Paperless-ngx URL | Required |
 | `PAPERLESS_TOKEN` | API token | Required |
 | `SERVER_ADDR` | Listen address | `:8080` |
 | `TITLE_PAGE_ENABLED` | Generate weekly title pages | `true` |
 | `TITLE_PAGE_WEEK_START` | `monday` or `sunday` | `monday` |
 | `DATABASE_PATH` | SQLite database path | `/data/paperless-airscan.db` |
+
+### Duplex Page Reordering
+
+Some HP scanners return duplex scan pages in "fronts-then-backs" order:
+- Received: `front1, front2, front3, back3, back2, back1` (or `back1, back2, back3`)
+
+Set `SCANNER_REORDER=interleave` to reorder pages into reading order:
+- Result: `front1, back1, front2, back2, front3, back3`
 
 ## Getting Paperless-ngx API Token
 
