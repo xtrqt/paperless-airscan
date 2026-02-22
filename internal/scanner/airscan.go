@@ -40,6 +40,7 @@ func (s *AirScanScanner) discoverService(ctx context.Context) (*dnssd.BrowseEntr
 	s.logger.Info("discovering scanner via mDNS", "timeout", s.timeout)
 
 	var foundService *dnssd.BrowseEntry
+	foundChan := make(chan *dnssd.BrowseEntry, 1)
 
 	addFn := func(service dnssd.BrowseEntry) {
 		humanName := service.Text["ty"]
@@ -49,7 +50,10 @@ func (s *AirScanScanner) discoverService(ctx context.Context) (*dnssd.BrowseEntr
 
 		if s.host != "" && s.host == service.Host {
 			s.logger.Info("found scanner by host", "name", humanName, "host", service.Host)
-			foundService = &service
+			select {
+			case foundChan <- &service:
+			default:
+			}
 			return
 		}
 
@@ -63,17 +67,22 @@ func (s *AirScanScanner) discoverService(ctx context.Context) (*dnssd.BrowseEntr
 		s.logger.Debug("scanner removed from discovery", "name", service.Name)
 	}
 
-	if err := dnssd.LookupType(ctx, airscan.ServiceName, addFn, rmvFn); err != nil {
-		if err != context.Canceled && err != context.DeadlineExceeded {
-			return nil, fmt.Errorf("mDNS lookup failed: %w", err)
+	lookupCtx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+
+	go func() {
+		_ = dnssd.LookupType(lookupCtx, airscan.ServiceName, addFn, rmvFn)
+	}()
+
+	select {
+	case svc := <-foundChan:
+		return svc, nil
+	case <-lookupCtx.Done():
+		if foundService != nil {
+			return foundService, nil
 		}
+		return nil, fmt.Errorf("no airscan-compatible scanners found within %v", s.timeout)
 	}
-
-	if foundService == nil {
-		return nil, fmt.Errorf("no airscan-compatible scanners found")
-	}
-
-	return foundService, nil
 }
 
 func (s *AirScanScanner) createClient(ctx context.Context) (*airscan.Client, error) {
