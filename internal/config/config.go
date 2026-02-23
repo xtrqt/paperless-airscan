@@ -10,7 +10,7 @@ type Config struct {
 	Scanner   ScannerConfig
 	Paperless PaperlessConfig
 	Server    ServerConfig
-	TitlePage TitlePageConfig
+	Filing    FilingConfig
 	Storage   StorageConfig
 }
 
@@ -32,9 +32,10 @@ type ServerConfig struct {
 	Addr string
 }
 
-type TitlePageConfig struct {
-	Enabled   bool
-	WeekStart string
+type FilingConfig struct {
+	Enabled       bool
+	PageThreshold int
+	PrinterHost   string
 }
 
 type StorageConfig struct {
@@ -59,9 +60,10 @@ func Load() *Config {
 		Server: ServerConfig{
 			Addr: getEnv("SERVER_ADDR", ":8080"),
 		},
-		TitlePage: TitlePageConfig{
-			Enabled:   getBoolEnv("TITLE_PAGE_ENABLED", true),
-			WeekStart: getEnv("TITLE_PAGE_WEEK_START", "monday"),
+		Filing: FilingConfig{
+			Enabled:       getBoolEnv("FILING_ENABLED", true),
+			PageThreshold: getIntEnv("FILING_PAGE_THRESHOLD", 50),
+			PrinterHost:   getEnv("FILING_PRINTER_HOST", ""),
 		},
 		Storage: StorageConfig{
 			DatabasePath: getEnv("DATABASE_PATH", "/data/paperless-airscan.db"),
@@ -95,6 +97,17 @@ func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
 			return defaultValue
 		}
 		return d
+	}
+	return defaultValue
+}
+
+func getIntEnv(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		i, err := strconv.Atoi(value)
+		if err != nil {
+			return defaultValue
+		}
+		return i
 	}
 	return defaultValue
 }

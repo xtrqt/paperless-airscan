@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -19,9 +21,10 @@ type Client struct {
 }
 
 type DocumentMeta struct {
-	Title   string    `json:"title"`
-	Created time.Time `json:"created"`
-	Tags    []int     `json:"tags,omitempty"`
+	Title        string            `json:"title"`
+	Created      time.Time         `json:"created"`
+	Tags         []int             `json:"tags,omitempty"`
+	CustomFields map[string]string `json:"custom_fields,omitempty"`
 }
 
 type Document struct {
@@ -84,6 +87,15 @@ func (c *Client) UploadDocument(pdfPath string, meta DocumentMeta) (string, erro
 		_ = writer.WriteField("title", meta.Title)
 	}
 
+	// Add custom fields if provided
+	if len(meta.CustomFields) > 0 {
+		for key, value := range meta.CustomFields {
+			fieldName := fmt.Sprintf("custom_field_%s", key)
+			_ = writer.WriteField(fieldName, value)
+			slog.Info("adding custom field to upload", "field", fieldName, "value", value)
+		}
+	}
+
 	if err := writer.Close(); err != nil {
 		return "", fmt.Errorf("failed to close writer: %w", err)
 	}
@@ -99,12 +111,28 @@ func (c *Client) UploadDocument(pdfPath string, meta DocumentMeta) (string, erro
 		return "", fmt.Errorf("upload failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result UploadResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+	// Read the raw response body
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
 	}
 
-	return result.TaskID, nil
+	// Log the raw response for debugging
+	slog.Info("paperless upload response", "response", string(bodyBytes))
+
+	// Try parsing as JSON object first ({"task_id": "..."})
+	var result UploadResponse
+	if err := json.Unmarshal(bodyBytes, &result); err == nil && result.TaskID != "" {
+		return result.TaskID, nil
+	}
+
+	// Fallback: treat as plain string task ID (remove quotes if present)
+	taskID := strings.Trim(string(bodyBytes), "\" \n\r\t")
+	if taskID == "" {
+		return "", fmt.Errorf("empty task ID in response: %s", string(bodyBytes))
+	}
+
+	return taskID, nil
 }
 
 func (c *Client) GetDocument(id int) (*Document, error) {

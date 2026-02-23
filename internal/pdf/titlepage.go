@@ -8,8 +8,6 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"time"
-
-	"github.com/signintech/gopdf"
 )
 
 type TitlePageConfig struct {
@@ -20,37 +18,8 @@ type TitlePageConfig struct {
 }
 
 func GenerateTitlePage(config TitlePageConfig) ([]byte, error) {
-	pdf := gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	pdf.AddPage()
-
-	width := 595.28
-	height := 841.89
-
-	titleText := fmt.Sprintf("WEEK %d, %d", config.Week, config.Year)
-	dateText := fmt.Sprintf("%s - %s",
-		config.StartDate.Format("2 January"),
-		config.EndDate.Format("2 January 2006"),
-	)
-
-	pdf.SetFont("Helvetica-Bold", "", 48)
-	titleWidth, _ := pdf.MeasureTextWidth(titleText)
-	pdf.SetX((width - titleWidth) / 2)
-	pdf.SetY(height/2 - 50)
-	pdf.Cell(nil, titleText)
-
-	pdf.SetFont("Helvetica", "", 24)
-	dateWidth, _ := pdf.MeasureTextWidth(dateText)
-	pdf.SetX((width - dateWidth) / 2)
-	pdf.SetY(height/2 + 20)
-	pdf.Cell(nil, dateText)
-
-	var buf bytes.Buffer
-	if err := pdf.Write(&buf); err != nil {
-		return nil, fmt.Errorf("failed to write PDF: %w", err)
-	}
-
-	return buf.Bytes(), nil
+	// Use simple image-based title page instead of gopdf
+	return GenerateTitlePageSimple(config)
 }
 
 func GenerateTitlePageSimple(config TitlePageConfig) ([]byte, error) {

@@ -24,7 +24,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	store, err := store.New(cfg.Storage.DatabasePath)
+	store, err := store.New(cfg.Storage.DatabasePath, logger)
 	if err != nil {
 		logger.Error("failed to initialize store", "error", err)
 		os.Exit(1)
@@ -43,7 +43,8 @@ func main() {
 	logger.Info("paperless-airscan started",
 		"addr", cfg.Server.Addr,
 		"paperless_url", cfg.Paperless.URL,
-		"title_page_enabled", cfg.TitlePage.Enabled,
+		"filing_enabled", cfg.Filing.Enabled,
+		"filing_threshold", cfg.Filing.PageThreshold,
 	)
 
 	quit := make(chan os.Signal, 1)
