@@ -244,7 +244,18 @@ func (s *Server) processJob(jobID string) {
 		return
 	}
 
-	logger.Info("job completed successfully")
+	// Dump all filing info if filing is enabled and filingID is set
+	if s.cfg.Filing.Enabled && filingID != "" {
+		batch, err := s.filing.GetCurrentBatch(ctx)
+		if err != nil {
+			logger.Warn("could not fetch filing batch for logging", "error", err, "filing_id", filingID)
+		} else if batch != nil {
+			logger.Info("job completed successfully", "filing_info", batch, "threshold", s.cfg.Filing.PageThreshold)
+			return
+		}
+	} else {
+		logger.Info("job completed successfully")
+	}
 }
 
 func (s *Server) failJob(jobID, message string, err error) {
