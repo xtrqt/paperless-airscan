@@ -17,8 +17,8 @@ type Scanner interface {
 type ColorMode string
 
 const (
-	ColorGrayscale ColorMode = "grayscale"
-	ColorRGB24     ColorMode = "rgb24"
+	ColorGrayscale ColorMode = "Grayscale8"
+	ColorRGB24     ColorMode = "RGB24"
 )
 
 type Source string
